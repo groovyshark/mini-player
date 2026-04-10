@@ -121,7 +121,9 @@ void Renderer::draw(float videoScaleX, float videoScaleY) {
     glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
 }
 
-void Renderer::updateVideoTexture(const uint8_t *buffer, int width, int height) {
+void Renderer::updateVideoTexture(const uint8_t* buffer, int width, int height) {
+    if (!buffer || width == 0 || height == 0) return;
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _videoTexture);
 
@@ -137,11 +139,20 @@ void Renderer::updateVideoTexture(const uint8_t *buffer, int width, int height) 
     }
 }
 
-void Renderer::updateCEFTexture(const uint8_t *buffer, int width, int height) {
+void Renderer::updateCEFTexture(const uint8_t* buffer, int width, int height) {
+    if (!buffer || width == 0 || height == 0) return;
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _cefTexture);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
+    if (_cefWidth != width || _cefHeight != height) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
+
+        _cefWidth = width;
+        _cefHeight = height;
+    } else {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
+    }
 }
 
 void Renderer::checkCompileErrors(uint32_t shader, const std::string& type) {

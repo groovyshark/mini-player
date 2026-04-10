@@ -34,4 +34,7 @@ private:
 
     int _videoWidth{0};
     int _videoHeight{0};
+
+    int _cefWidth{0};
+    int _cefHeight{0};
 };
