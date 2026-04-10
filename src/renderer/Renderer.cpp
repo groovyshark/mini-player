@@ -1,0 +1,149 @@
+#include "Renderer.hpp"
+
+#include <vector>
+#include <stdexcept>
+#include <iostream>
+
+#include <glad/gl.h>
+
+#include "utils/Utils.hpp"
+
+namespace {
+    float vertices[] = {
+        // --- (CEF) ---
+        -1.0f,  0.0f,   0.0f, 1.0f, 
+         1.0f,  0.0f,   1.0f, 1.0f, 
+        -1.0f,  1.0f,   0.0f, 0.0f, 
+         1.0f,  1.0f,   1.0f, 0.0f, 
+
+        // --- (FFmpeg) ---
+        -1.0f, -1.0f,   0.0f, 1.0f, 
+         1.0f, -1.0f,   1.0f, 1.0f, 
+        -1.0f,  0.0f,   0.0f, 0.0f, 
+         1.0f,  0.0f,   1.0f, 0.0f  
+    };
+} // namespace
+
+void Renderer::init() {
+    if (!compileShaders()) {
+        throw std::runtime_error("Renderer::init: Failed to compile shaders");
+    }
+
+    setupGeometry();
+
+    _cefTexture = createDummyTexture(200, 50, 50);
+    _videoTexture = createDummyTexture(50, 200, 50);
+}
+
+uint32_t Renderer::createDummyTexture(uint8_t r, uint8_t g, uint8_t b) {
+    uint32_t texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    constexpr int bufferSize = 2 * 2 * 3;
+    std::vector<uint8_t> buffer(bufferSize);
+    for (int i = 0; i < bufferSize; i += 3) {
+        buffer[i] = r; 
+        buffer[i + 1] = g;
+        buffer[i + 2] = b;
+    }
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    
+    return texture;
+}
+
+void Renderer::setupGeometry() {
+    glGenVertexArrays(1, &_vao);
+    glGenBuffers(1, &_vbo);
+
+    glBindVertexArray(_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // position x, y
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // texture coordinates u, v
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+}
+
+bool Renderer::compileShaders() {
+    std::string vertCodeStr = utils::loadShaderSource("res/shaders/basic.vert");
+    std::string fragCodeStr = utils::loadShaderSource("res/shaders/basic.frag");
+
+    const char* vShaderCode = vertCodeStr.c_str();
+    const char* fShaderCode = fragCodeStr.c_str();
+
+    uint32_t vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vShaderCode, NULL);
+    glCompileShader(vertexShader);
+    // TODO в идеале здесь нужна проверка glGetShaderiv на GL_COMPILE_STATUS
+
+    uint32_t fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fShaderCode, NULL);
+    glCompileShader(fragmentShader);
+
+    _shaderProgram = glCreateProgram();
+
+    glAttachShader(_shaderProgram, vertexShader);
+    glAttachShader(_shaderProgram, fragmentShader);
+    glLinkProgram(_shaderProgram);
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    return true;
+}
+
+void Renderer::draw(float videoScaleX, float videoScaleY) {
+    glUseProgram(_shaderProgram);
+    glBindVertexArray(_vao);
+
+    GLint scaleLoc = glGetUniformLocation(_shaderProgram, "uScale");
+    GLint centerLoc = glGetUniformLocation(_shaderProgram, "uCenter");
+
+    // draw CEF texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _cefTexture);
+    glUniform2f(scaleLoc, 1.0f, 1.0f);
+    glUniform2f(centerLoc, 0.0f, 0.5f);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    // draw ffmpeg texture
+    glBindTexture(GL_TEXTURE_2D, _videoTexture);
+    glUniform2f(scaleLoc, videoScaleX, videoScaleY);
+    glUniform2f(centerLoc, 0.0f, -0.5f);
+    glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+}
+
+void Renderer::updateVideoTexture(const uint8_t* buffer, int width, int height) {
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _videoTexture);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    // TODO: implement letterboxing(calculate aspect ratio and scale vertices) to avoid stretching
+    
+    if (_videoWidth != width || _videoHeight != height) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer);
+        
+        _videoWidth = width;
+        _videoHeight = height;
+    } else {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer);
+    }
+}
+
+void Renderer::updateCEFTexture(const uint8_t* buffer, int width, int height) {
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, _cefTexture);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
+}

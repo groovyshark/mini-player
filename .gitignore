@@ -1,0 +1,10 @@
+# IDE and build system files
+.vscode/
+.idea/
+
+# Ignore build artifacts and temporary files
+build/
+bin/
+.cmake/
+
+external/cef*/

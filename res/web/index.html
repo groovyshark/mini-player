@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEF OSR Test</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a1a2e;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 32px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+            color: #00ffff;
+        }
+
+        .fps-box {
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #00ffff;
+            display: inline-block;
+            font-size: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ui-layer">
+        <h1>CEF OSR Renderer</h1>
+        <div class="fps-box">JS Animation FPS: <strong id="fps">0</strong></div>
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script src="index.js"></script>
+</body>
+
+</html>
