@@ -12,9 +12,10 @@
 #include "app/Config.hpp"
 #include "utils/Constants.hpp"
 
-App::App() : _window(utils::WINDOW_WIDTH, utils::WINDOW_HEIGHT),
-             _cefWidth(_window.getWidth()),
-             _cefHeight(_window.getHeight() / 2) {
+App::App() : 
+    _window(utils::WINDOW_WIDTH, utils::WINDOW_HEIGHT),
+    _cefWidth(_window.getWidth()),
+    _cefHeight(_window.getHeight() / 2) {
 }
 
 App::~App() {
@@ -41,6 +42,7 @@ void App::shutdownCEFContext() {
 
     _browserClient = nullptr;
 
+    // allow some time for CEF to clean up resources
     for (int i = 0; i < 10; ++i) {
         CefDoMessageLoopWork();
     }

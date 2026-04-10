@@ -3,10 +3,10 @@
 #include <string>
 
 extern "C" {
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-#include <libswscale/swscale.h>
-#include <libavutil/imgutils.h>
+    #include <libavformat/avformat.h>
+    #include <libavcodec/avcodec.h>
+    #include <libswscale/swscale.h>
+    #include <libavutil/imgutils.h>
 }
 
 class VideoDecoder {
@@ -23,6 +23,7 @@ public:
     int getHeight() const { return _codecContext->height; }
 
     double getFps() const { return _fps; }
+
 private:
     void initFps();
 

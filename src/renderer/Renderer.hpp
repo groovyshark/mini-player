@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 class Renderer {
 public:
@@ -16,9 +17,11 @@ public:
 
 private:
     void setupGeometry();
-    bool compileShaders();
+    void compileShaders();
 
     uint32_t createDummyTexture(uint8_t r, uint8_t g, uint8_t b);
+
+    void checkCompileErrors(uint32_t shader, const std::string& type);
 
 private:
     uint32_t _cefTexture{0};
